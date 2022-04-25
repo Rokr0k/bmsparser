@@ -1,38 +1,41 @@
 #include "bmsparser/bmsparser.hpp"
 #include <fstream>
 #include <regex>
+#include <filesystem>
+#include <random>
 #include <stack>
 #include <map>
 #include <algorithm>
 #include <exception>
+#include <iostream>
 
 using namespace bms;
 
-const static std::regex randomRegex(R"(^\s*#RANDOM\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex ifRegex(R"(^\s*#IF\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex elseRegex(R"(^\s*#ELSE\s*$)", std::regex_constants::icase);
-const static std::regex endifRegex(R"(^\s*#ENDIF\s*$)", std::regex_constants::icase);
+const static std::regex randomRegex(R"(^#RANDOM\s*(\d+))", std::regex_constants::icase);
+const static std::regex ifRegex(R"(^#IF\s*(\d+))", std::regex_constants::icase);
+const static std::regex elseRegex(R"(^#ELSE)", std::regex_constants::icase);
+const static std::regex endifRegex(R"(^#ENDIF)", std::regex_constants::icase);
 
-const static std::regex genreRegex(R"(^\s*#GENRE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex titleRegex(R"(^\s*#TITLE\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex genreRegex(R"(^#GENRE\s*(.*))", std::regex_constants::icase);
+const static std::regex titleRegex(R"(^#TITLE\s*(.*))", std::regex_constants::icase);
 const static std::regex nestedSubtitleRegex(R"(^(.*)\s*[\(\[\uFF50\<\"\-](.*)[\)\]\uFF50\>\"\-]$)", std::regex_constants::icase);
-const static std::regex artistRegex(R"(^\s*#ARTIST\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex subtitleRegex(R"(^\s*#SUBTITLE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex subartistRegex(R"(^\s*#SUBARTIST\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex stagefileRegex(R"(^\s*#STAGEFILE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex bannerRegex(R"(^\s*#BANNER\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex playLevelRegex(R"(^\s*#PLAYLEVEL\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex difficultyRegex(R"(^\s*#DIFFICULTY\s*([12345])\s*$)", std::regex_constants::icase);
-const static std::regex totalRegex(R"(^\s*#TOTAL\s*(\d+(\.\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex rankRegex(R"(^\s*#RANK\s*([0123])\s*$)", std::regex_constants::icase);
-const static std::regex wavsRegex(R"(^\s*#WAV([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex bmpsRegex(R"(^\s*#BMP([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex lnobjRegex(R"(^\s*#LNOBJ\s*([0-9A-Z]{2})\s*$)", std::regex_constants::icase);
-const static std::regex bpmRegex(R"(^\s*#BPM\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex bpmsRegex(R"(^\s*#BPM([0-9A-Z]{2})\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex stopsRegex(R"(^\s*#STOP([0-9A-Z]{2})\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex signatureRegex(R"(^\s*#(\d{3})02:(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex notesRegex(R"(^\s*#(\d{3})([0-9A-Z]{2}):(.*)\s*$)", std::regex_constants::icase);
+const static std::regex artistRegex(R"(^#ARTIST\s*(.*))", std::regex_constants::icase);
+const static std::regex subtitleRegex(R"(^#SUBTITLE\s*(.*))", std::regex_constants::icase);
+const static std::regex subartistRegex(R"(^#SUBARTIST\s*(.*))", std::regex_constants::icase);
+const static std::regex stagefileRegex(R"(^#STAGEFILE\s*(.*))", std::regex_constants::icase);
+const static std::regex bannerRegex(R"(^#BANNER\s*(.*))", std::regex_constants::icase);
+const static std::regex playLevelRegex(R"(^#PLAYLEVEL\s*(\d+))", std::regex_constants::icase);
+const static std::regex difficultyRegex(R"(^#DIFFICULTY\s*([12345]))", std::regex_constants::icase);
+const static std::regex totalRegex(R"(^#TOTAL\s*(\d+(\.\d+)?))", std::regex_constants::icase);
+const static std::regex rankRegex(R"(^#RANK\s*([0123]))", std::regex_constants::icase);
+const static std::regex wavsRegex(R"(^#WAV([0-9A-Z]{2})\s*(.*))", std::regex_constants::icase);
+const static std::regex bmpsRegex(R"(^#BMP([0-9A-Z]{2})\s*(.*))", std::regex_constants::icase);
+const static std::regex lnobjRegex(R"(^#LNOBJ\s*([0-9A-Z]{2}))", std::regex_constants::icase);
+const static std::regex bpmRegex(R"(^#BPM\s*(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
+const static std::regex bpmsRegex(R"(^#BPM([0-9A-Z]{2})\s*(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
+const static std::regex stopsRegex(R"(^#STOP([0-9A-Z]{2})\s*(\d+))", std::regex_constants::icase);
+const static std::regex signatureRegex(R"(^#(\d{3})02:(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
+const static std::regex notesRegex(R"(^#(\d{3})([0-9A-Z]{2}):(.*))", std::regex_constants::icase);
 
 static bool file_check(const std::string &file);
 
@@ -46,12 +49,13 @@ static Obj create_bomb(float fraction, int player, int line, int damage);
 
 Chart::Chart(const std::string &file)
 {
-    if (!file_check(file))
+    std::filesystem::path filepath(file);
+    if (!std::filesystem::exists(filepath))
     {
         throw std::invalid_argument("file");
     }
 
-    std::string parent(file.substr(0, file.find_last_of('/') + 1));
+    std::filesystem::path parent(filepath.parent_path());
 
     this->player = 1;
     this->genre = "";
@@ -96,9 +100,10 @@ Chart::Chart(const std::string &file)
     std::stack<bool> skip;
     skip.push(false);
 
-    srand((unsigned int)time(NULL));
+    std::random_device rd;
+    std::mt19937 gen(rd());
 
-    std::ifstream input(file);
+    std::ifstream input(filepath);
     std::string line;
     while (std::getline(input, line))
     {
@@ -106,7 +111,7 @@ Chart::Chart(const std::string &file)
 
         if (std::regex_match(line, result, randomRegex))
         {
-            random = rand() % std::stoi(result[1].str()) + 1;
+            random = std::uniform_int_distribution(1, std::stoi(result[1].str()))(gen);
         }
         else if (std::regex_match(line, result, ifRegex))
         {
@@ -155,11 +160,11 @@ Chart::Chart(const std::string &file)
         }
         else if (std::regex_match(line, result, stagefileRegex))
         {
-            this->stagefile = parent + result[1].str();
+            this->stagefile = parent / result[1].str();
         }
         else if (std::regex_match(line, result, bannerRegex))
         {
-            this->banner = parent + result[1].str();
+            this->banner = parent / result[1].str();
         }
         else if (std::regex_match(line, result, playLevelRegex))
         {
@@ -179,30 +184,30 @@ Chart::Chart(const std::string &file)
         }
         else if (std::regex_match(line, result, wavsRegex))
         {
-            int key = std::stoi(result[1].str(), 0, 36);
-            this->wavs[key] = parent + result[2].str();
+            int key = std::stoi(result[1].str(), nullptr, 36);
+            this->wavs[key] = parent / result[2].str();
         }
         else if (std::regex_match(line, result, bmpsRegex))
         {
-            int key = std::stoi(result[1].str(), 0, 36);
-            this->bmps[key] = parent + result[2].str();
+            int key = std::stoi(result[1].str(), nullptr, 36);
+            this->bmps[key] = parent / result[2].str();
+        }
+        else if (std::regex_match(line, result, lnobjRegex))
+        {
+            lnobj.push_back(std::stoi(result[1].str(), nullptr, 36));
         }
         else if (std::regex_match(line, result, bpmRegex))
         {
             this->sectors[0].bpm = std::stof(result[1].str());
         }
-        else if (std::regex_match(line, result, lnobjRegex))
-        {
-            lnobj.push_back(std::stoi(result[1].str()));
-        }
         else if (std::regex_match(line, result, bpmsRegex))
         {
-            int key = std::stoi(result[1].str(), 0, 36);
+            int key = std::stoi(result[1].str(), nullptr, 36);
             bpms[key] = std::stof(result[2].str());
         }
         else if (std::regex_match(line, result, stopsRegex))
         {
-            int key = std::stoi(result[1].str(), 0, 36);
+            int key = std::stoi(result[1].str(), nullptr, 36);
             stops[key] = std::stoi(result[2].str()) / 192.0f;
         }
         else if (std::regex_match(line, result, signatureRegex))
@@ -213,12 +218,11 @@ Chart::Chart(const std::string &file)
         else if (std::regex_match(line, result, notesRegex))
         {
             int measure = std::stoi(result[1].str());
-            int channel = std::stoi(result[2].str(), 0, 36);
+            int channel = std::stoi(result[2].str(), nullptr, 36);
             unsigned long long l = result[3].length() / 2;
             for (unsigned long long i = 0; i < l; i++)
             {
-                int key = std::stoi(result[3].str().substr(i * 2, 2), 0, 36);
-                int hexKey = std::stoi(result[3].str().substr(i * 2, 2), 0, 16);
+                int key = std::stoi(result[3].str().substr(i * 2, 2), nullptr, 36);
                 if (key)
                 {
                     float fraction = (float)i / l;
@@ -229,9 +233,9 @@ Chart::Chart(const std::string &file)
                         break;
                     case 3: // 03
                         speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::BPM,
-                            (float)hexKey,
+                            .fraction = fraction,
+                            .type = speedcore_t::Type::BPM,
+                            .bpm = (float)std::stoi(result[3].str().substr(i * 2, 2), nullptr, 16),
                         });
                         break;
                     case 4: // 04
@@ -245,16 +249,16 @@ Chart::Chart(const std::string &file)
                         break;
                     case 8: // 08
                         speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::BPM,
-                            bpms[key],
+                            .fraction = fraction,
+                            .type = speedcore_t::Type::BPM,
+                            .bpm = bpms[key],
                         });
                         break;
                     case 9: // 09
                         speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::STP,
-                            stops[key],
+                            .fraction = fraction,
+                            .type = speedcore_t::Type::STP,
+                            .stop = stops[key],
                         });
                         break;
                     case 37: // 11
