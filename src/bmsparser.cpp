@@ -4,8 +4,6 @@
 #include <stack>
 #include <map>
 #include <algorithm>
-#include <exception>
-#include <iostream>
 
 using namespace bms;
 
@@ -114,7 +112,7 @@ Chart *bms::parseBMS(const std::string &file)
         }
         else if (std::regex_match(line, result, ifRegex))
         {
-            skip.push(random == std::stoi(result[1].str()));
+            skip.push(random != std::stoi(result[1].str()));
         }
         else if (std::regex_match(line, result, elseRegex))
         {
