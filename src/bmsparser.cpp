@@ -14,7 +14,7 @@ const static std::regex endifRegex(R"(^\s*#ENDIF\s*$)", std::regex_constants::ic
 
 const static std::regex genreRegex(R"(^\s*#GENRE\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex titleRegex(R"(^\s*#TITLE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex nestedSubtitleRegex(R"(^(.*)\s*[\(\[\uFF50\<\"\-](.*)[\)\]\uFF50\>\"\-]$)", std::regex_constants::icase);
+const static std::regex nestedSubtitleRegex(R"(^(.*)\s*[\(\[\<\"\-](.*)[\)\]\>\"\-]$)", std::regex_constants::icase);
 const static std::regex artistRegex(R"(^\s*#ARTIST\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex subtitleRegex(R"(^\s*#SUBTITLE\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex subartistRegex(R"(^\s*#SUBARTIST\s*(.*)\s*$)", std::regex_constants::icase);
