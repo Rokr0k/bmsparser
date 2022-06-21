@@ -201,7 +201,7 @@ namespace bms
          *
          * \throw std::invalid_argument Cannot read the file
          */
-        Chart(const std::string &file);
+        Chart();
         ~Chart();
 
         /**
@@ -219,6 +219,7 @@ namespace bms
         float timeToFraction(float time);
     };
 
+    Chart *parseBMS(const std::string &file);
 }
 
 #endif
