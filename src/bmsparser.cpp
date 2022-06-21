@@ -7,31 +7,31 @@
 
 using namespace bms;
 
-const static std::regex randomRegex(R"(^#RANDOM\s*(\d+))", std::regex_constants::icase);
-const static std::regex ifRegex(R"(^#IF\s*(\d+))", std::regex_constants::icase);
-const static std::regex elseRegex(R"(^#ELSE)", std::regex_constants::icase);
-const static std::regex endifRegex(R"(^#ENDIF)", std::regex_constants::icase);
+const static std::regex randomRegex(R"(^\s*#RANDOM\s*(\d+)\s*$)", std::regex_constants::icase);
+const static std::regex ifRegex(R"(^\s*#IF\s*(\d+)\s*$)", std::regex_constants::icase);
+const static std::regex elseRegex(R"(^\s*#ELSE\s*$)", std::regex_constants::icase);
+const static std::regex endifRegex(R"(^\s*#ENDIF\s*$)", std::regex_constants::icase);
 
-const static std::regex genreRegex(R"(^#GENRE\s*(.*))", std::regex_constants::icase);
-const static std::regex titleRegex(R"(^#TITLE\s*(.*))", std::regex_constants::icase);
+const static std::regex genreRegex(R"(^\s*#GENRE\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex titleRegex(R"(^\s*#TITLE\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex nestedSubtitleRegex(R"(^(.*)\s*[\(\[\uFF50\<\"\-](.*)[\)\]\uFF50\>\"\-]$)", std::regex_constants::icase);
-const static std::regex artistRegex(R"(^#ARTIST\s*(.*))", std::regex_constants::icase);
-const static std::regex subtitleRegex(R"(^#SUBTITLE\s*(.*))", std::regex_constants::icase);
-const static std::regex subartistRegex(R"(^#SUBARTIST\s*(.*))", std::regex_constants::icase);
-const static std::regex stagefileRegex(R"(^#STAGEFILE\s*(.*))", std::regex_constants::icase);
-const static std::regex bannerRegex(R"(^#BANNER\s*(.*))", std::regex_constants::icase);
-const static std::regex playLevelRegex(R"(^#PLAYLEVEL\s*(\d+))", std::regex_constants::icase);
-const static std::regex difficultyRegex(R"(^#DIFFICULTY\s*([12345]))", std::regex_constants::icase);
-const static std::regex totalRegex(R"(^#TOTAL\s*(\d+(\.\d+)?))", std::regex_constants::icase);
-const static std::regex rankRegex(R"(^#RANK\s*([0123]))", std::regex_constants::icase);
-const static std::regex wavsRegex(R"(^#WAV([0-9A-Z]{2})\s*(.*))", std::regex_constants::icase);
-const static std::regex bmpsRegex(R"(^#BMP([0-9A-Z]{2})\s*(.*))", std::regex_constants::icase);
-const static std::regex lnobjRegex(R"(^#LNOBJ\s*([0-9A-Z]{2}))", std::regex_constants::icase);
-const static std::regex bpmRegex(R"(^#BPM\s*(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
-const static std::regex bpmsRegex(R"(^#BPM([0-9A-Z]{2})\s*(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
-const static std::regex stopsRegex(R"(^#STOP([0-9A-Z]{2})\s*(\d+))", std::regex_constants::icase);
-const static std::regex signatureRegex(R"(^#(\d{3})02:(\d+(\.\d+)?(E\+\d+)?))", std::regex_constants::icase);
-const static std::regex notesRegex(R"(^#(\d{3})([0-9A-Z]{2}):(.*))", std::regex_constants::icase);
+const static std::regex artistRegex(R"(^\s*#ARTIST\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex subtitleRegex(R"(^\s*#SUBTITLE\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex subartistRegex(R"(^\s*#SUBARTIST\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex stagefileRegex(R"(^\s*#STAGEFILE\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex bannerRegex(R"(^\s*#BANNER\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex playLevelRegex(R"(^\s*#PLAYLEVEL\s*(\d+)\s*$)", std::regex_constants::icase);
+const static std::regex difficultyRegex(R"(^\s*#DIFFICULTY\s*([12345])\s*$)", std::regex_constants::icase);
+const static std::regex totalRegex(R"(^\s*#TOTAL\s*(\d+(\.\d+)?)\s*$)", std::regex_constants::icase);
+const static std::regex rankRegex(R"(^\s*#RANK\s*([0123])\s*$)", std::regex_constants::icase);
+const static std::regex wavsRegex(R"(^\s*#WAV([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex bmpsRegex(R"(^\s*#BMP([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
+const static std::regex lnobjRegex(R"(^\s*#LNOBJ\s*([0-9A-Z]{2})\s*$)", std::regex_constants::icase);
+const static std::regex bpmRegex(R"(^\s*#BPM\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
+const static std::regex bpmsRegex(R"(^\s*#BPM([0-9A-Z]{2})\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
+const static std::regex stopsRegex(R"(^\s*#STOP([0-9A-Z]{2})\s*(\d+)\s*$)", std::regex_constants::icase);
+const static std::regex signatureRegex(R"(^\s*#(\d{3})02:(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
+const static std::regex notesRegex(R"(^\s*#(\d{3})([0-9A-Z]{2}):(.*)\s*$)", std::regex_constants::icase);
 
 static bool file_check(const std::string &file);
 
@@ -104,6 +104,11 @@ Chart *bms::parseBMS(const std::string &file)
     std::string line;
     while (std::getline(input, line))
     {
+        if(line.size() == 0 || line[0] != '#')
+        {
+            continue;
+        }
+
         std::smatch result;
 
         if (std::regex_match(line, result, randomRegex))
@@ -264,6 +269,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 40: // 14
                     case 41: // 15
                     case 42: // 16
+                    case 43: // 17
                     case 44: // 18
                     case 45: // 19
                     case 73: // 21
@@ -272,6 +278,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 76: // 24
                     case 77: // 25
                     case 78: // 26
+                    case 79: // 27
                     case 80: // 28
                     case 81: // 29
                         chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, std::find(lnobj.begin(), lnobj.end(), key) != lnobj.end()));
@@ -286,6 +293,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 112: // 34
                     case 113: // 35
                     case 114: // 36
+                    case 115: // 37
                     case 116: // 38
                     case 117: // 39
                     case 145: // 41
@@ -294,6 +302,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 148: // 44
                     case 149: // 45
                     case 150: // 46
+                    case 151: // 47
                     case 152: // 48
                     case 153: // 49
                         chart->objs.push_back(create_inv(fraction, key, channel / 36 - 2, channel % 36));
@@ -304,6 +313,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 184: // 54
                     case 185: // 55
                     case 186: // 56
+                    case 187: // 57
                     case 188: // 58
                     case 189: // 59
                     case 217: // 61
@@ -312,6 +322,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 220: // 64
                     case 221: // 65
                     case 222: // 66
+                    case 223: // 67
                     case 224: // 68
                     case 225: // 69
                         chart->objs.push_back(create_note(fraction, key, channel / 36 - 4, channel % 36, ln[channel]));
@@ -323,6 +334,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 472: // D4
                     case 473: // D5
                     case 474: // D6
+                    case 475: // D7
                     case 476: // D8
                     case 477: // D9
                     case 505: // E1
@@ -331,6 +343,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 508: // E4
                     case 509: // E5
                     case 510: // E6
+                    case 511: // E7
                     case 512: // E8
                     case 513: // E9
                         chart->objs.push_back(create_bomb(fraction, key, channel / 36 - 12, channel % 36));
