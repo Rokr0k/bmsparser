@@ -75,7 +75,7 @@ Chart::~Chart()
     delete[] this->signatures;
 }
 
-Chart *parseBMS(const std::string &file)
+Chart *bms::parseBMS(const std::string &file)
 {
     Chart *chart = new Chart;
 
