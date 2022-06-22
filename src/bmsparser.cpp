@@ -105,7 +105,7 @@ Chart *bms::parseBMS(const std::string &file)
     std::string line;
     while (std::getline(input, line))
     {
-        if(line.empty() || line[0] != '#')
+        if (line.empty() || line[0] != '#')
         {
             continue;
         }
@@ -230,7 +230,7 @@ Chart *bms::parseBMS(const std::string &file)
                 int key = std::stoi(result[3].str().substr(i * 2, 2), nullptr, 36);
                 if (key)
                 {
-                    float fraction = (float)i / l;
+                    float fraction = measure + (float)i / l;
                     switch (channel)
                     {
                     case 1: // 01
@@ -407,18 +407,10 @@ static float fraction_diff(float *signatures, float a, float b)
     int bM = (int)b;
     float aF = a - aM;
     float bF = b - bM;
-    float result;
-    if (aM == bM)
+    float result = bF * signatures[bM] - aF * signatures[aM];
+    for (int i = aM; i < bM; i++)
     {
-        result = (bF - aF) * signatures[aM];
-    }
-    else
-    {
-        result = (1 - aF) * signatures[aM] + bF * signatures[bM];
-        for (int i = aM + 1; i < bM; i++)
-        {
-            result += signatures[i];
-        }
+        result += signatures[i];
     }
     if (negative)
     {
@@ -463,7 +455,7 @@ static Obj create_bmp(float fraction, int key, int layer)
     return obj;
 }
 
-static Obj create_note(float fraction, int player, int line, int key, bool end)
+static Obj create_note(float fraction, int key, int player, int line, bool end)
 {
     Obj obj;
     obj.type = Obj::Type::NOTE;
@@ -475,7 +467,7 @@ static Obj create_note(float fraction, int player, int line, int key, bool end)
     return obj;
 }
 
-static Obj create_inv(float fraction, int player, int line, int key)
+static Obj create_inv(float fraction, int key, int player, int line)
 {
     Obj obj;
     obj.type = Obj::Type::INVISIBLE;
@@ -486,7 +478,7 @@ static Obj create_inv(float fraction, int player, int line, int key)
     return obj;
 }
 
-static Obj create_bomb(float fraction, int player, int line, int damage)
+static Obj create_bomb(float fraction, int damage, int player, int line)
 {
     Obj obj;
     obj.type = Obj::Type::BOMB;
