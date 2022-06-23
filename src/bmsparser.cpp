@@ -283,9 +283,13 @@ Chart *bms::parseBMS(const std::string &file)
                     case 79: // 27
                     case 80: // 28
                     case 81: // 29
-                        chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, std::find(lnobj.begin(), lnobj.end(), key) != lnobj.end()));
-                        if (std::find(lnobj.begin(), lnobj.end(), key) != lnobj.end())
+                        if (std::find(lnobj.begin(), lnobj.end(), key) == lnobj.end())
                         {
+                            chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, false));
+                        }
+                        else
+                        {
+                            chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, true));
                             chart->objs.push_back(create_bgm(fraction, key));
                         }
                         break;
@@ -327,8 +331,12 @@ Chart *bms::parseBMS(const std::string &file)
                     case 223: // 67
                     case 224: // 68
                     case 225: // 69
+                        if (ln.find(channel) == ln.end())
+                        {
+                            ln[channel] = false;
+                        }
                         chart->objs.push_back(create_note(fraction, key, channel / 36 - 4, channel % 36, ln[channel]));
-                        ln.insert(std::make_pair(channel, !ln[channel]));
+                        ln[channel] = !ln[channel];
                         break;
                     case 469: // D1
                     case 470: // D2
