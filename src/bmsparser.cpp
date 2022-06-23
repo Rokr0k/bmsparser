@@ -444,6 +444,7 @@ static Obj create_bgm(float fraction, int key)
     obj.type = Obj::Type::BGM;
     obj.fraction = fraction;
     obj.bgm.key = key;
+    obj.executed = false;
     return obj;
 }
 
@@ -454,6 +455,7 @@ static Obj create_bmp(float fraction, int key, int layer)
     obj.fraction = fraction;
     obj.bmp.key = key;
     obj.bmp.layer = layer;
+    obj.executed = false;
     return obj;
 }
 
@@ -466,6 +468,7 @@ static Obj create_note(float fraction, int key, int player, int line, bool end)
     obj.note.line = line;
     obj.note.key = key;
     obj.note.end = end;
+    obj.executed = false;
     return obj;
 }
 
@@ -477,6 +480,7 @@ static Obj create_inv(float fraction, int key, int player, int line)
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = key;
+    obj.executed = false;
     return obj;
 }
 
@@ -488,5 +492,6 @@ static Obj create_bomb(float fraction, int damage, int player, int line)
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = damage;
+    obj.executed = false;
     return obj;
 }
