@@ -46,7 +46,6 @@ static Obj create_bomb(float fraction, int player, int line, int damage);
 
 Chart::Chart()
 {
-    this->player = 1;
     this->genre = "";
     this->title = "";
     this->artist = "";
@@ -424,16 +423,11 @@ float Chart::resolveSignatures(float fraction)
     return fraction_diff(this->signatures, 0, fraction);
 }
 
-float Sector::timeToFraction(float time)
-{
-    return this->fraction + (time - this->time) * this->bpm / 240;
-}
-
 float Chart::timeToFraction(float time)
 {
-    return std::find_if(this->sectors.rbegin(), this->sectors.rend(), [&time](const Sector &a)
-                        { return a.time < time || (a.inclusive && a.time == time); })
-        ->timeToFraction(time);
+    const Sector &sector = *std::find_if(this->sectors.rbegin(), this->sectors.rend(), [&time](const Sector &a)
+                                         { return a.time < time || (a.inclusive && a.time == time); });
+    return resolveSignatures(sector.fraction) + (time - sector.time) * sector.bpm / 240;
 }
 
 static Obj create_bgm(float fraction, int key)

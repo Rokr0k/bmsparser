@@ -117,25 +117,11 @@ namespace bms
          * \param inclusive Whether the sector is inclusive
          */
         Sector(float fraction, float time, float bpm, bool inclusive) : fraction(fraction), time(time), bpm(bpm), inclusive(inclusive) {}
-
-        /**
-         * Convert time into resolved fraction.
-         * \param time Time
-         * \return Resolved fraction
-         */
-        float timeToFraction(float time);
     };
 
     /// Structure for Chart
     struct Chart
     {
-        /**
-         * 1: Single Play
-         * 2: Coop Play
-         * 3: Double Play
-         */
-        int player;
-
         /// Genre
         std::string genre;
 
