@@ -415,10 +415,17 @@ static float fraction_diff(float *signatures, float a, float b)
     int bM = (int)b;
     float aF = a - aM;
     float bF = b - bM;
-    float result = bF * signatures[bM] - aF * signatures[aM];
+    float result = bF * (bM >= 0 ? signatures[bM] : 1) - aF * (aM >= 0 ? signatures[aM] : 1);
     for (int i = aM; i < bM; i++)
     {
-        result += signatures[i];
+        if (i >= 0)
+        {
+            result += signatures[i];
+        }
+        else
+        {
+            result += 1;
+        }
     }
     if (negative)
     {
@@ -434,9 +441,16 @@ float Chart::resolveSignatures(float fraction)
 
 float Chart::timeToFraction(float time)
 {
-    const Sector &sector = *std::find_if(this->sectors.rbegin(), this->sectors.rend(), [&time](const Sector &a)
-                                         { return a.time < time || (a.inclusive && a.time == time); });
-    return resolveSignatures(sector.fraction) + (time - sector.time) * sector.bpm / 240;
+    const std::vector<Sector>::reverse_iterator &i = std::find_if(this->sectors.rbegin(), this->sectors.rend(), [&time](const Sector &a)
+                                                                  { return a.time < time || (a.inclusive && a.time == time); });
+    if (i != this->sectors.rend())
+    {
+        return resolveSignatures(i->fraction) + (time - i->time) * i->bpm / 240;
+    }
+    else
+    {
+        return resolveSignatures(this->sectors.front().fraction) + (time - this->sectors.front().time) * this->sectors.front().bpm / 240;
+    }
 }
 
 static Obj create_bgm(float fraction, int key)
