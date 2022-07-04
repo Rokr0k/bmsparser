@@ -369,8 +369,8 @@ Chart *bms::parseBMS(const std::string &file)
                      { return a.fraction < b.fraction; });
     for (speedcore_t &core : speedcore)
     {
-        const Sector &last = *std::find_if(chart->sectors.rbegin(), chart->sectors.rend(), [&core](const Sector &a)
-                                           { return a.fraction < core.fraction || (a.inclusive && a.fraction == core.fraction); });
+        const Sector last = *std::find_if(chart->sectors.rbegin(), chart->sectors.rend(), [&core](const Sector &a)
+                                          { return a.fraction < core.fraction || (a.inclusive && a.fraction == core.fraction); });
         float time = last.time + (last.bpm > 0 ? fraction_diff(chart->signatures, last.fraction, core.fraction) * 240 / last.bpm : 0);
         switch (core.type)
         {
