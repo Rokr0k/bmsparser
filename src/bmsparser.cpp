@@ -365,6 +365,8 @@ Chart *bms::parseBMS(const std::string &file)
         }
     }
 
+    input.close();
+
     std::stable_sort(speedcore.begin(), speedcore.end(), [](const speedcore_t &a, const speedcore_t &b)
                      { return a.fraction < b.fraction; });
     for (speedcore_t &core : speedcore)
