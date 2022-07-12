@@ -122,6 +122,28 @@ namespace bms
     /// Structure for Chart
     struct Chart
     {
+        /// Type of the chart
+        enum class Type
+        {
+            /**
+             * 7K1S
+             * 16 11 12 13 14 15 18 19
+             */
+            Single,
+
+            /**
+             * 14K2S
+             * 16 11 12 13 14 15 18 19 21 22 23 24 25 28 29 26
+             */
+            Dual,
+
+            /**
+             * 9K
+             * 11 12 13 14 15 22 23 24 25
+             */
+            PopN,
+        } type;
+
         /// Genre
         std::string genre;
 
@@ -181,13 +203,9 @@ namespace bms
         /// Sectors
         std::vector<Sector> sectors;
 
-        /**
-         * Parse .bms file.
-         * \param file Path to the file
-         *
-         * \throw std::invalid_argument Cannot read the file
-         */
         Chart();
+        Chart(const Chart &chart);
+
         ~Chart();
 
         /**
@@ -205,6 +223,12 @@ namespace bms
         float timeToFraction(float time);
     };
 
+    /**
+     * Parse .bms file.
+     * \param file Path to the file
+     *
+     * \throw std::invalid_argument Cannot read the file
+     */
     Chart *parseBMS(const std::string &file);
 }
 

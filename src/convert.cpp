@@ -1,4 +1,4 @@
-#include "convert.hpp"
+#include <bmsparser/convert.hpp>
 #include "table.hpp"
 
 std::string bms::sjis_to_utf8(const std::string &input)

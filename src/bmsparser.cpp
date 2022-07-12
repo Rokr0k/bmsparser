@@ -3,8 +3,8 @@
 #include <regex>
 #include <stack>
 #include <map>
+#include <set>
 #include <algorithm>
-#include "convert.hpp"
 
 using namespace bms;
 
@@ -46,6 +46,7 @@ static Obj create_bomb(float fraction, int player, int line, int damage);
 
 Chart::Chart()
 {
+    this->type = Type::Single;
     this->genre = "";
     this->title = "";
     this->artist = "";
@@ -64,6 +65,35 @@ Chart::Chart()
         this->signatures[i] = 1;
     }
     this->sectors.push_back(Sector(0, 0, 130, true));
+}
+
+Chart::Chart(const Chart &chart)
+{
+    this->type = chart.type;
+    this->genre = chart.genre;
+    this->title = chart.title;
+    this->artist = chart.artist;
+    this->subtitle = chart.subtitle;
+    this->stagefile = chart.stagefile;
+    this->banner = chart.banner;
+    this->playLevel = chart.playLevel;
+    this->difficulty = chart.difficulty;
+    this->total = chart.total;
+    this->rank = chart.rank;
+    this->wavs = new std::string[1296];
+    this->bmps = new std::string[1296];
+    for (int i = 0; i < 1296; i++)
+    {
+        this->wavs[i] = chart.wavs[i];
+        this->bmps[i] = chart.bmps[i];
+    }
+    this->signatures = new float[1000];
+    for (int i = 0; i < 1000; i++)
+    {
+        this->signatures[i] = chart.signatures[i];
+    }
+    this->objs.assign(chart.objs.begin(), chart.objs.end());
+    this->sectors.assign(chart.sectors.begin(), chart.sectors.end());
 }
 
 Chart::~Chart()
@@ -105,30 +135,28 @@ Chart *bms::parseBMS(const std::string &file)
 
     while (std::getline(input, line))
     {
-        std::string text = sjis_to_utf8(line);
-
-        if (text.empty() || text[0] != '#')
+        if (line.empty() || line[0] != '#')
         {
             continue;
         }
 
         std::smatch result;
 
-        if (std::regex_match(text, result, randomRegex))
+        if (std::regex_match(line, result, randomRegex))
         {
             random = rand() % std::stoi(result[1].str()) + 1;
         }
-        else if (std::regex_match(text, result, ifRegex))
+        else if (std::regex_match(line, result, ifRegex))
         {
             skip.push(random != std::stoi(result[1].str()));
         }
-        else if (std::regex_match(text, result, elseRegex))
+        else if (std::regex_match(line, result, elseRegex))
         {
             bool top = skip.top();
             skip.pop();
             skip.push(!top);
         }
-        else if (std::regex_match(text, result, endifRegex))
+        else if (std::regex_match(line, result, endifRegex))
         {
             skip.pop();
         }
@@ -138,11 +166,11 @@ Chart *bms::parseBMS(const std::string &file)
             continue;
         }
 
-        if (std::regex_match(text, result, genreRegex))
+        if (std::regex_match(line, result, genreRegex))
         {
             chart->genre = result[1].str();
         }
-        else if (std::regex_match(text, result, titleRegex))
+        else if (std::regex_match(line, result, titleRegex))
         {
             chart->title = result[1].str();
             if (std::regex_match(chart->title, result, nestedSubtitleRegex))
@@ -151,76 +179,76 @@ Chart *bms::parseBMS(const std::string &file)
                 chart->subtitle = "[" + result[2].str() + "]";
             }
         }
-        else if (std::regex_match(text, result, artistRegex))
+        else if (std::regex_match(line, result, artistRegex))
         {
             chart->artist = result[1].str();
         }
-        else if (std::regex_match(text, result, subtitleRegex))
+        else if (std::regex_match(line, result, subtitleRegex))
         {
             chart->subtitle = result[1].str();
         }
-        else if (std::regex_match(text, result, subartistRegex))
+        else if (std::regex_match(line, result, subartistRegex))
         {
             chart->subartist = result[1].str();
         }
-        else if (std::regex_match(text, result, stagefileRegex))
+        else if (std::regex_match(line, result, stagefileRegex))
         {
             chart->stagefile = parent + result[1].str();
         }
-        else if (std::regex_match(text, result, bannerRegex))
+        else if (std::regex_match(line, result, bannerRegex))
         {
             chart->banner = parent + result[1].str();
         }
-        else if (std::regex_match(text, result, playLevelRegex))
+        else if (std::regex_match(line, result, playLevelRegex))
         {
             chart->playLevel = std::stoi(result[1].str());
         }
-        else if (std::regex_match(text, result, difficultyRegex))
+        else if (std::regex_match(line, result, difficultyRegex))
         {
             chart->difficulty = std::stoi(result[1].str());
         }
-        else if (std::regex_match(text, result, totalRegex))
+        else if (std::regex_match(line, result, totalRegex))
         {
             chart->total = std::stof(result[1].str());
         }
-        else if (std::regex_match(text, result, rankRegex))
+        else if (std::regex_match(line, result, rankRegex))
         {
             chart->rank = std::stoi(result[1].str());
         }
-        else if (std::regex_match(text, result, wavsRegex))
+        else if (std::regex_match(line, result, wavsRegex))
         {
             int key = std::stoi(result[1].str(), nullptr, 36);
             chart->wavs[key] = parent + result[2].str();
         }
-        else if (std::regex_match(text, result, bmpsRegex))
+        else if (std::regex_match(line, result, bmpsRegex))
         {
             int key = std::stoi(result[1].str(), nullptr, 36);
             chart->bmps[key] = parent + result[2].str();
         }
-        else if (std::regex_match(text, result, lnobjRegex))
+        else if (std::regex_match(line, result, lnobjRegex))
         {
             lnobj.push_back(std::stoi(result[1].str(), nullptr, 36));
         }
-        else if (std::regex_match(text, result, bpmRegex))
+        else if (std::regex_match(line, result, bpmRegex))
         {
             chart->sectors[0].bpm = std::stof(result[1].str());
         }
-        else if (std::regex_match(text, result, bpmsRegex))
+        else if (std::regex_match(line, result, bpmsRegex))
         {
             int key = std::stoi(result[1].str(), nullptr, 36);
             bpms[key] = std::stof(result[2].str());
         }
-        else if (std::regex_match(text, result, stopsRegex))
+        else if (std::regex_match(line, result, stopsRegex))
         {
             int key = std::stoi(result[1].str(), nullptr, 36);
             stops[key] = std::stoi(result[2].str()) / 192.0f;
         }
-        else if (std::regex_match(text, result, signatureRegex))
+        else if (std::regex_match(line, result, signatureRegex))
         {
             int measure = std::stoi(result[1].str());
             chart->signatures[measure] = std::stof(result[2].str());
         }
-        else if (std::regex_match(text, result, notesRegex))
+        else if (std::regex_match(line, result, notesRegex))
         {
             int measure = std::stoi(result[1].str());
             int channel = std::stoi(result[2].str(), nullptr, 36);
@@ -272,7 +300,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 40: // 14
                     case 41: // 15
                     case 42: // 16
-                    case 43: // 17
+                    // case 43: // 17
                     case 44: // 18
                     case 45: // 19
                     case 73: // 21
@@ -281,7 +309,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 76: // 24
                     case 77: // 25
                     case 78: // 26
-                    case 79: // 27
+                    // case 79: // 27
                     case 80: // 28
                     case 81: // 29
                         if (std::find(lnobj.begin(), lnobj.end(), key) == lnobj.end())
@@ -300,7 +328,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 112: // 34
                     case 113: // 35
                     case 114: // 36
-                    case 115: // 37
+                    // case 115: // 37
                     case 116: // 38
                     case 117: // 39
                     case 145: // 41
@@ -309,7 +337,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 148: // 44
                     case 149: // 45
                     case 150: // 46
-                    case 151: // 47
+                    // case 151: // 47
                     case 152: // 48
                     case 153: // 49
                         chart->objs.push_back(create_inv(fraction, key, channel / 36 - 2, channel % 36));
@@ -320,7 +348,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 184: // 54
                     case 185: // 55
                     case 186: // 56
-                    case 187: // 57
+                    // case 187: // 57
                     case 188: // 58
                     case 189: // 59
                     case 217: // 61
@@ -329,7 +357,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 220: // 64
                     case 221: // 65
                     case 222: // 66
-                    case 223: // 67
+                    // case 223: // 67
                     case 224: // 68
                     case 225: // 69
                         if (ln.find(channel) == ln.end())
@@ -345,7 +373,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 472: // D4
                     case 473: // D5
                     case 474: // D6
-                    case 475: // D7
+                    // case 475: // D7
                     case 476: // D8
                     case 477: // D9
                     case 505: // E1
@@ -354,7 +382,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 508: // E4
                     case 509: // E5
                     case 510: // E6
-                    case 511: // E7
+                    // case 511: // E7
                     case 512: // E8
                     case 513: // E9
                         chart->objs.push_back(create_bomb(fraction, key, channel / 36 - 12, channel % 36));
@@ -396,6 +424,43 @@ Chart *bms::parseBMS(const std::string &file)
 
     delete[] bpms;
     delete[] stops;
+
+    std::set<std::pair<int, int>> lineCnt;
+    bool p2 = false;
+    for (const Obj &obj : chart->objs)
+    {
+        switch (obj.type)
+        {
+        case Obj::Type::NOTE:
+            lineCnt.insert({obj.note.player, obj.note.line});
+            if (obj.note.player > 1)
+            {
+                p2 = true;
+            }
+            break;
+        case Obj::Type::INVISIBLE:
+        case Obj::Type::BOMB:
+            lineCnt.insert({obj.misc.player, obj.misc.line});
+            if (obj.misc.player > 1)
+            {
+                p2 = true;
+            }
+            break;
+        }
+    }
+
+    if (lineCnt.size() == 9)
+    {
+        chart->type = Chart::Type::PopN;
+    }
+    else if (!p2)
+    {
+        chart->type = Chart::Type::Single;
+    }
+    else
+    {
+        chart->type = Chart::Type::Dual;
+    }
 
     return chart;
 }
