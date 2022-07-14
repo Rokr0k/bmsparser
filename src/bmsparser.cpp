@@ -3,7 +3,6 @@
 #include <regex>
 #include <stack>
 #include <map>
-#include <set>
 #include <algorithm>
 
 using namespace bms;
@@ -300,7 +299,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 40: // 14
                     case 41: // 15
                     case 42: // 16
-                    // case 43: // 17
+                    case 43: // 17
                     case 44: // 18
                     case 45: // 19
                     case 73: // 21
@@ -309,7 +308,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 76: // 24
                     case 77: // 25
                     case 78: // 26
-                    // case 79: // 27
+                    case 79: // 27
                     case 80: // 28
                     case 81: // 29
                         if (std::find(lnobj.begin(), lnobj.end(), key) == lnobj.end())
@@ -328,7 +327,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 112: // 34
                     case 113: // 35
                     case 114: // 36
-                    // case 115: // 37
+                    case 115: // 37
                     case 116: // 38
                     case 117: // 39
                     case 145: // 41
@@ -337,7 +336,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 148: // 44
                     case 149: // 45
                     case 150: // 46
-                    // case 151: // 47
+                    case 151: // 47
                     case 152: // 48
                     case 153: // 49
                         chart->objs.push_back(create_inv(fraction, key, channel / 36 - 2, channel % 36));
@@ -348,7 +347,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 184: // 54
                     case 185: // 55
                     case 186: // 56
-                    // case 187: // 57
+                    case 187: // 57
                     case 188: // 58
                     case 189: // 59
                     case 217: // 61
@@ -357,7 +356,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 220: // 64
                     case 221: // 65
                     case 222: // 66
-                    // case 223: // 67
+                    case 223: // 67
                     case 224: // 68
                     case 225: // 69
                         if (ln.find(channel) == ln.end())
@@ -373,7 +372,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 472: // D4
                     case 473: // D5
                     case 474: // D6
-                    // case 475: // D7
+                    case 475: // D7
                     case 476: // D8
                     case 477: // D9
                     case 505: // E1
@@ -382,7 +381,7 @@ Chart *bms::parseBMS(const std::string &file)
                     case 508: // E4
                     case 509: // E5
                     case 510: // E6
-                    // case 511: // E7
+                    case 511: // E7
                     case 512: // E8
                     case 513: // E9
                         chart->objs.push_back(create_bomb(fraction, key, channel / 36 - 12, channel % 36));
@@ -425,14 +424,12 @@ Chart *bms::parseBMS(const std::string &file)
     delete[] bpms;
     delete[] stops;
 
-    std::set<std::pair<int, int>> lineCnt;
     bool p2 = false;
     for (const Obj &obj : chart->objs)
     {
         switch (obj.type)
         {
         case Obj::Type::NOTE:
-            lineCnt.insert({obj.note.player, obj.note.line});
             if (obj.note.player > 1)
             {
                 p2 = true;
@@ -440,7 +437,6 @@ Chart *bms::parseBMS(const std::string &file)
             break;
         case Obj::Type::INVISIBLE:
         case Obj::Type::BOMB:
-            lineCnt.insert({obj.misc.player, obj.misc.line});
             if (obj.misc.player > 1)
             {
                 p2 = true;
@@ -449,11 +445,7 @@ Chart *bms::parseBMS(const std::string &file)
         }
     }
 
-    if (lineCnt.size() == 9)
-    {
-        chart->type = Chart::Type::PopN;
-    }
-    else if (!p2)
+    if (!p2)
     {
         chart->type = Chart::Type::Single;
     }
