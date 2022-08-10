@@ -1,4 +1,4 @@
-#include "bmsparser/bmsparser.hpp"
+#include <bmsparser.hpp>
 #include <fstream>
 #include <regex>
 #include <stack>
