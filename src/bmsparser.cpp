@@ -14,7 +14,6 @@ const static std::regex endifRegex(R"(^\s*#ENDIF\s*$)", std::regex_constants::ic
 
 const static std::regex genreRegex(R"(^\s*#GENRE\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex titleRegex(R"(^\s*#TITLE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex nestedSubtitleRegex(R"(^(.*)\s*[\(\[\<\-](.*)[\)\]\>\-]$)", std::regex_constants::icase);
 const static std::regex artistRegex(R"(^\s*#ARTIST\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex subtitleRegex(R"(^\s*#SUBTITLE\s*(.*)\s*$)", std::regex_constants::icase);
 const static std::regex subartistRegex(R"(^\s*#SUBARTIST\s*(.*)\s*$)", std::regex_constants::icase);
@@ -172,10 +171,35 @@ Chart *bms::parseBMS(const std::string &file)
         else if (std::regex_match(line, result, titleRegex))
         {
             chart->title = result[1].str();
-            if (std::regex_match(chart->title, result, nestedSubtitleRegex))
+            // if (std::regex_match(chart->title, result, nestedSubtitleRegex))
+            // {
+            //     chart->title = result[1].str();
+            //     chart->subtitle = "[" + result[2].str() + "]";
+            // }
+            if (chart->title.find_first_of('[') < chart->title.find_last_of(']'))
             {
-                chart->title = result[1].str();
-                chart->subtitle = "[" + result[2].str() + "]";
+                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('[') + 1, chart->title.find_last_of(']') - chart->title.find_first_of('[') - 1) + "]";
+                chart->title = chart->title.substr(0, chart->title.find_first_of('['));
+            }
+            else if (chart->title.find_first_of('{') < chart->title.find_last_of('}'))
+            {
+                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('{') + 1, chart->title.find_last_of('}') - chart->title.find_first_of('{') - 1) + "]";
+                chart->title = chart->title.substr(0, chart->title.find_first_of('{'));
+            }
+            else if (chart->title.find_first_of('(') < chart->title.find_last_of(')'))
+            {
+                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('(') + 1, chart->title.find_last_of(')') - chart->title.find_first_of('(') - 1) + "]";
+                chart->title = chart->title.substr(0, chart->title.find_first_of('('));
+            }
+            else if (chart->title.find_first_of('<') < chart->title.find_last_of('>'))
+            {
+                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('<') + 1, chart->title.find_last_of('>') - chart->title.find_first_of('<') - 1) + "]";
+                chart->title = chart->title.substr(0, chart->title.find_first_of('<'));
+            }
+            else if (chart->title.find_first_of('-') < chart->title.find_last_of('-'))
+            {
+                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('-') + 1, chart->title.find_last_of('-') - chart->title.find_first_of('-') - 1) + "]";
+                chart->title = chart->title.substr(0, chart->title.find_first_of('-'));
             }
         }
         else if (std::regex_match(line, result, artistRegex))
