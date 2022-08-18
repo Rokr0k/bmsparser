@@ -45,6 +45,7 @@ static Obj create_bomb(float fraction, int player, int line, int damage);
 Chart::Chart()
 {
     this->type = Type::Single;
+    this->filename = "";
     this->genre = "";
     this->title = "";
     this->artist = "";
@@ -68,6 +69,7 @@ Chart::Chart()
 Chart::Chart(const Chart &chart)
 {
     this->type = chart.type;
+    this->filename = chart.filename;
     this->genre = chart.genre;
     this->title = chart.title;
     this->artist = chart.artist;
@@ -104,6 +106,8 @@ Chart::~Chart()
 Chart *bms::parseBMS(const std::string &file)
 {
     Chart *chart = new Chart;
+
+    chart->filename = file;
 
     std::string parent = file.substr(0, file.find_last_of('/') + 1);
 

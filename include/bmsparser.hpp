@@ -138,6 +138,8 @@ namespace bms
             Dual,
         } type;
 
+        std::string filename;
+
         /// Genre
         std::string genre;
 
