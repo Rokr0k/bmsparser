@@ -89,9 +89,6 @@ namespace bms
                 int key;
             } misc;
         };
-
-        /// Whether it is executed
-        bool executed;
     };
 
     /// Structure for Sector

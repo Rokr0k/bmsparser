@@ -175,11 +175,6 @@ Chart *bms::parseBMS(const std::string &file)
         else if (std::regex_match(line, result, titleRegex))
         {
             chart->title = result[1].str();
-            // if (std::regex_match(chart->title, result, nestedSubtitleRegex))
-            // {
-            //     chart->title = result[1].str();
-            //     chart->subtitle = "[" + result[2].str() + "]";
-            // }
             if (chart->title.find_first_of('[') < chart->title.find_last_of(']'))
             {
                 chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('[') + 1, chart->title.find_last_of(']') - chart->title.find_first_of('[') - 1) + "]";
@@ -546,7 +541,6 @@ static Obj create_bgm(float fraction, int key)
     obj.type = Obj::Type::BGM;
     obj.fraction = fraction;
     obj.bgm.key = key;
-    obj.executed = false;
     return obj;
 }
 
@@ -557,7 +551,6 @@ static Obj create_bmp(float fraction, int key, int layer)
     obj.fraction = fraction;
     obj.bmp.key = key;
     obj.bmp.layer = layer;
-    obj.executed = false;
     return obj;
 }
 
@@ -570,7 +563,6 @@ static Obj create_note(float fraction, int key, int player, int line, bool end)
     obj.note.line = line;
     obj.note.key = key;
     obj.note.end = end;
-    obj.executed = false;
     return obj;
 }
 
@@ -582,7 +574,6 @@ static Obj create_inv(float fraction, int key, int player, int line)
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = key;
-    obj.executed = false;
     return obj;
 }
 
@@ -594,6 +585,5 @@ static Obj create_bomb(float fraction, int damage, int player, int line)
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = damage;
-    obj.executed = false;
     return obj;
 }
