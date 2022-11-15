@@ -6,9 +6,10 @@
 
 namespace bms
 {
-    /// Structure for Objects
-    struct Obj
+    /// Object Class
+    class Obj
     {
+    public:
         /// Type of the objects
         enum class Type
         {
@@ -28,8 +29,8 @@ namespace bms
             BOMB
         } type;
 
-        /// Unresolved fraction of the object
-        float fraction;
+        /// Position of the object
+        float pos;
 
         /// Time it will be executed
         float time;
@@ -91,11 +92,12 @@ namespace bms
         };
     };
 
-    /// Structure for Sector
-    struct Sector
+    /// Sector Class
+    class Sector
     {
-        /// Unresolved fraction of the start of the sector
-        float fraction;
+    public:
+        /// Position of the start of the sector
+        float pos;
 
         /// Time the sector will be started
         float time;
@@ -108,17 +110,32 @@ namespace bms
 
         /**
          * Create Sector.
-         * \param fraction Unresolved fraction
+         * \param pos Position
          * \param time When the sector will be started
          * \param bpm Scroll speed
          * \param inclusive Whether the sector is inclusive
          */
-        Sector(float fraction, float time, float bpm, bool inclusive) : fraction(fraction), time(time), bpm(bpm), inclusive(inclusive) {}
+        Sector(float pos, float time, float bpm, bool inclusive) : pos(pos), time(time), bpm(bpm), inclusive(inclusive) {}
+
+        /**
+         * Convert position to time.
+         * \param pos Position
+         * \return Time
+         */
+        float pos2time(float pos) const;
+
+        /**
+         * Convert time to position.
+         * \param time Time
+         * \return Position
+         */
+        float time2pos(float time) const;
     };
 
-    /// Structure for Chart
-    struct Chart
+    /// Chart Class
+    class Chart
     {
+    public:
         /// Type of the chart
         enum class Type
         {
@@ -202,18 +219,32 @@ namespace bms
         ~Chart();
 
         /**
-         * Resolve fraction.
-         * \param fraction Unresolved fraction
-         * \return Resolved fraction
+         * Convert fraction to position.
+         * \param frac Fraction
+         * \return Position
          */
-        float resolveSignatures(float fraction);
+        float frac2pos(float frac) const;
 
         /**
-         * Convert time to resolved fraction.
-         * \param time Time
-         * \return Resolved fraction
+         * Convert position to fraction.
+         * \param pos Position
+         * \return Fraction
          */
-        float timeToFraction(float time);
+        float pos2frac(float pos) const;
+
+        /**
+         * Convert position to time.
+         * \param pos Position
+         * \return Time
+         */
+        float pos2time(float pos) const;
+
+        /**
+         * Convert time to position.
+         * \param time Time
+         * \return Position
+         */
+        float time2pos(float time) const;
     };
 
     /**

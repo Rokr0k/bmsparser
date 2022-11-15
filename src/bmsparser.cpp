@@ -34,8 +34,6 @@ const static std::regex notesRegex(R"(^\s*#(\d{3})([0-9A-Z]{2}):(.*)\s*$)", std:
 
 static bool file_check(const std::string &file);
 
-static float fraction_diff(float *signatures, float a, float b);
-
 static Obj create_bgm(float fraction, int key);
 static Obj create_bmp(float fraction, int key, int layer);
 static Obj create_note(float fraction, int player, int line, int key, bool end);
@@ -421,27 +419,26 @@ Chart *bms::parseBMS(const std::string &file)
                      { return a.fraction < b.fraction; });
     for (speedcore_t &core : speedcore)
     {
-        const Sector last = *std::find_if(chart->sectors.rbegin(), chart->sectors.rend(), [&core](const Sector &a)
-                                          { return a.fraction < core.fraction || (a.inclusive && a.fraction == core.fraction); });
-        float time = last.time + (last.bpm > 0 ? fraction_diff(chart->signatures, last.fraction, core.fraction) * 240 / last.bpm : 0);
+        const Sector &last = chart->sectors.back();
+        float pos = chart->frac2pos(core.fraction);
+        float time = last.pos2time(pos);
         switch (core.type)
         {
         case speedcore_t::Type::BPM:
-            chart->sectors.push_back(Sector(core.fraction, time, core.value, true));
+            chart->sectors.push_back(Sector(pos, time, core.value, true));
             break;
         case speedcore_t::Type::STP:
-            chart->sectors.push_back(Sector(core.fraction, time, 0, true));
-            chart->sectors.push_back(Sector(core.fraction, time + (last.bpm > 0 ? core.value * 240 / last.bpm : 0), last.bpm, false));
+            chart->sectors.push_back(Sector(pos, time, 0, true));
+            chart->sectors.push_back(Sector(pos, time + (last.bpm > 0 ? core.value * 240 / last.bpm : 0), last.bpm, false));
             break;
         }
     }
     std::stable_sort(chart->objs.begin(), chart->objs.end(), [](const Obj &a, const Obj &b)
-                     { return a.fraction < b.fraction; });
+                     { return a.pos < b.pos; });
     for (Obj &note : chart->objs)
     {
-        const Sector &sect = *std::find_if(chart->sectors.rbegin(), chart->sectors.rend(), [&note](const Sector &a)
-                                           { return a.fraction < note.fraction || (a.inclusive && a.fraction == note.fraction); });
-        note.time = sect.time + (sect.bpm > 0 ? fraction_diff(chart->signatures, sect.fraction, note.fraction) * 240 / sect.bpm : 0);
+        note.pos = chart->frac2pos(note.pos);
+        note.time = chart->pos2time(note.pos);
     }
 
     delete[] bpms;
@@ -486,60 +483,75 @@ static bool file_check(const std::string &file)
     return stream.good();
 }
 
-static float fraction_diff(float *signatures, float a, float b)
+float Chart::frac2pos(float frac) const
 {
-    bool negative = a > b;
-    if (negative)
+    int measure = (int)frac;
+    int f = frac - measure;
+    float pos = f * this->signatures[measure];
+    for (int m = 0; m < measure; m++)
     {
-        std::swap(a, b);
+        pos += this->signatures[m];
     }
-    int aM = (int)a;
-    int bM = (int)b;
-    float aF = a - aM;
-    float bF = b - bM;
-    float result = bF * (bM >= 0 ? signatures[bM] : 1) - aF * (aM >= 0 ? signatures[aM] : 1);
-    for (int i = aM; i < bM; i++)
-    {
-        if (i >= 0)
-        {
-            result += signatures[i];
-        }
-        else
-        {
-            result += 1;
-        }
-    }
-    if (negative)
-    {
-        result = -result;
-    }
-    return result;
+    return pos;
 }
 
-float Chart::resolveSignatures(float fraction)
+float Chart::pos2frac(float pos) const
 {
-    return fraction_diff(this->signatures, 0, fraction);
+    int measure = 0;
+    while (pos > 0)
+    {
+        pos -= this->signatures[measure++];
+    }
+    while (pos < 0)
+    {
+        pos += this->signatures[--measure];
+    }
+    return measure + pos / this->signatures[measure];
 }
 
-float Chart::timeToFraction(float time)
+float Chart::pos2time(float pos) const
 {
-    const std::vector<Sector>::reverse_iterator &i = std::find_if(this->sectors.rbegin(), this->sectors.rend(), [&time](const Sector &a)
-                                                                  { return a.time < time || (a.inclusive && a.time == time); });
-    if (i != this->sectors.rend())
+    const std::vector<Sector>::const_reverse_iterator &i = std::find_if(this->sectors.crbegin(), this->sectors.crend(), [&pos](const Sector &a)
+                                                                  { return a.pos < pos || (a.inclusive && a.pos == pos); });
+    if (i != this->sectors.crend())
     {
-        return resolveSignatures(i->fraction) + (time - i->time) * i->bpm / 240;
+        return i->pos2time(pos);
     }
     else
     {
-        return resolveSignatures(this->sectors.front().fraction) + (time - this->sectors.front().time) * this->sectors.front().bpm / 240;
+        return this->sectors.begin()->pos2time(pos);
     }
+}
+
+float Chart::time2pos(float time) const
+{
+    const std::vector<Sector>::const_reverse_iterator &i = std::find_if(this->sectors.crbegin(), this->sectors.crend(), [&time](const Sector &a)
+                                                                  { return a.time < time || (a.inclusive && a.time == time); });
+    if (i != this->sectors.crend())
+    {
+        return i->time2pos(time);
+    }
+    else
+    {
+        return this->sectors.begin()->time2pos(time);
+    }
+}
+
+float Sector::pos2time(float pos) const
+{
+    return this->time + (pos - this->pos) * 240 / this->bpm;
+}
+
+float Sector::time2pos(float time) const
+{
+    return this->pos + (time - this->time) / 240 * this->bpm;
 }
 
 static Obj create_bgm(float fraction, int key)
 {
     Obj obj;
     obj.type = Obj::Type::BGM;
-    obj.fraction = fraction;
+    obj.pos = fraction;
     obj.bgm.key = key;
     return obj;
 }
@@ -548,7 +560,7 @@ static Obj create_bmp(float fraction, int key, int layer)
 {
     Obj obj;
     obj.type = Obj::Type::BMP;
-    obj.fraction = fraction;
+    obj.pos = fraction;
     obj.bmp.key = key;
     obj.bmp.layer = layer;
     return obj;
@@ -558,7 +570,7 @@ static Obj create_note(float fraction, int key, int player, int line, bool end)
 {
     Obj obj;
     obj.type = Obj::Type::NOTE;
-    obj.fraction = fraction;
+    obj.pos = fraction;
     obj.note.player = player;
     obj.note.line = line;
     obj.note.key = key;
@@ -570,7 +582,7 @@ static Obj create_inv(float fraction, int key, int player, int line)
 {
     Obj obj;
     obj.type = Obj::Type::INVISIBLE;
-    obj.fraction = fraction;
+    obj.pos = fraction;
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = key;
@@ -581,7 +593,7 @@ static Obj create_bomb(float fraction, int damage, int player, int line)
 {
     Obj obj;
     obj.type = Obj::Type::BOMB;
-    obj.fraction = fraction;
+    obj.pos = fraction;
     obj.misc.player = player;
     obj.misc.line = line;
     obj.misc.key = damage;
