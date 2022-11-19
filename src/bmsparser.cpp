@@ -119,7 +119,7 @@ Chart *bms::parseBMS(const std::string &file)
         enum class Type
         {
             BPM,
-            STP
+            STP,
         } type;
         float value;
     };
@@ -429,7 +429,7 @@ Chart *bms::parseBMS(const std::string &file)
             break;
         case speedcore_t::Type::STP:
             chart->sectors.push_back(Sector(pos, time, 0, true));
-            chart->sectors.push_back(Sector(pos, time + (last.bpm > 0 ? core.value * 240 / last.bpm : 0), last.bpm, false));
+            chart->sectors.push_back(Sector(pos, time + last.pos2time(core.value + last.pos) - last.time, last.bpm, false));
             break;
         }
     }
@@ -486,7 +486,7 @@ static bool file_check(const std::string &file)
 float Chart::frac2pos(float frac) const
 {
     int measure = (int)frac;
-    int f = frac - measure;
+    float f = frac - measure;
     float pos = f * this->signatures[measure];
     for (int m = 0; m < measure; m++)
     {
@@ -512,7 +512,7 @@ float Chart::pos2frac(float pos) const
 float Chart::pos2time(float pos) const
 {
     const std::vector<Sector>::const_reverse_iterator &i = std::find_if(this->sectors.crbegin(), this->sectors.crend(), [&pos](const Sector &a)
-                                                                  { return a.pos < pos || (a.inclusive && a.pos == pos); });
+                                                                        { return a.pos < pos || (a.inclusive && a.pos == pos); });
     if (i != this->sectors.crend())
     {
         return i->pos2time(pos);
@@ -526,7 +526,7 @@ float Chart::pos2time(float pos) const
 float Chart::time2pos(float time) const
 {
     const std::vector<Sector>::const_reverse_iterator &i = std::find_if(this->sectors.crbegin(), this->sectors.crend(), [&time](const Sector &a)
-                                                                  { return a.time < time || (a.inclusive && a.time == time); });
+                                                                        { return a.time < time || (a.inclusive && a.time == time); });
     if (i != this->sectors.crend())
     {
         return i->time2pos(time);
@@ -539,7 +539,7 @@ float Chart::time2pos(float time) const
 
 float Sector::pos2time(float pos) const
 {
-    return this->time + (pos - this->pos) * 240 / this->bpm;
+    return this->time + (this->bpm > 0 ? (pos - this->pos) * 240 / this->bpm : 0);
 }
 
 float Sector::time2pos(float time) const
