@@ -107,20 +107,22 @@ std::unique_ptr<Chart> bms::parseBMS(const std::string &file)
 
     std::ifstream input(file);
     std::string line;
-    std::stringstream s;
 
     while (std::getline(input, line))
     {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
         if (line.empty() || line[0] != '#')
         {
             continue;
         }
 
         std::string content = line.substr(1);
-        s.str(content);
         std::string header;
         std::string data;
-        std::getline(s >> header >> std::ws, data);
+        std::getline(std::stringstream(content) >> header >> std::ws, data);
+
+        std::transform(header.begin(), header.end(), header.begin(), ::toupper);
 
         if (header == "RANDOM")
         {
@@ -168,6 +170,7 @@ std::unique_ptr<Chart> bms::parseBMS(const std::string &file)
                 {
                     chart->subtitle = "[" + chart->title.substr(begin + 1, end - begin - 1) + "]";
                     chart->title = chart->title.substr(0, begin);
+                    break;
                 }
             }
         }
@@ -262,7 +265,7 @@ std::unique_ptr<Chart> bms::parseBMS(const std::string &file)
                             speedcore.push_back(speedcore_t{
                                 fraction,
                                 speedcore_t::Type::BPM,
-                                (float)std::stoi(content.substr(i * 2, 2), nullptr, 16),
+                                (float)std::stoi(objs.substr(i * 2, 2), nullptr, 16),
                             });
                             break;
                         case 4: // 04
