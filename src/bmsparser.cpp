@@ -76,9 +76,9 @@ Chart::~Chart()
     delete[] this->signatures;
 }
 
-std::unique_ptr<Chart> bms::parseBMS(const std::string &file)
+Chart *bms::parseBMS(const std::string &file)
 {
-    std::unique_ptr<Chart> chart = std::make_unique<Chart>();
+    Chart *chart = new Chart;
 
     chart->filename = file;
 

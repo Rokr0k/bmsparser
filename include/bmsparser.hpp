@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace bms
 {
@@ -254,7 +253,7 @@ namespace bms
      *
      * \throw std::invalid_argument Cannot read the file
      */
-    std::unique_ptr<Chart> parseBMS(const std::string &file);
+    Chart *parseBMS(const std::string &file);
 }
 
 #endif
