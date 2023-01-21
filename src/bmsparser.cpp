@@ -1,36 +1,11 @@
 #include <bmsparser.hpp>
 #include <fstream>
-#include <regex>
+#include <sstream>
 #include <stack>
 #include <map>
 #include <algorithm>
 
 using namespace bms;
-
-const static std::regex randomRegex(R"(^\s*#RANDOM\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex ifRegex(R"(^\s*#IF\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex elseRegex(R"(^\s*#ELSE\s*$)", std::regex_constants::icase);
-const static std::regex endifRegex(R"(^\s*#ENDIF\s*$)", std::regex_constants::icase);
-
-const static std::regex genreRegex(R"(^\s*#GENRE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex titleRegex(R"(^\s*#TITLE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex artistRegex(R"(^\s*#ARTIST\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex subtitleRegex(R"(^\s*#SUBTITLE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex subartistRegex(R"(^\s*#SUBARTIST\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex stagefileRegex(R"(^\s*#STAGEFILE\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex bannerRegex(R"(^\s*#BANNER\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex playLevelRegex(R"(^\s*#PLAYLEVEL\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex difficultyRegex(R"(^\s*#DIFFICULTY\s*([12345])\s*$)", std::regex_constants::icase);
-const static std::regex totalRegex(R"(^\s*#TOTAL\s*(\d+(\.\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex rankRegex(R"(^\s*#RANK\s*([0123])\s*$)", std::regex_constants::icase);
-const static std::regex wavsRegex(R"(^\s*#WAV([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex bmpsRegex(R"(^\s*#BMP([0-9A-Z]{2})\s*(.*)\s*$)", std::regex_constants::icase);
-const static std::regex lnobjRegex(R"(^\s*#LNOBJ\s*([0-9A-Z]{2})\s*$)", std::regex_constants::icase);
-const static std::regex bpmRegex(R"(^\s*#BPM\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex bpmsRegex(R"(^\s*#BPM([0-9A-Z]{2})\s*(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex stopsRegex(R"(^\s*#STOP([0-9A-Z]{2})\s*(\d+)\s*$)", std::regex_constants::icase);
-const static std::regex signatureRegex(R"(^\s*#(\d{3})02:(\d+(\.\d+)?(E\+\d+)?)\s*$)", std::regex_constants::icase);
-const static std::regex notesRegex(R"(^\s*#(\d{3})([0-9A-Z]{2}):(.*)\s*$)", std::regex_constants::icase);
 
 static bool file_check(const std::string &file);
 
@@ -132,6 +107,7 @@ Chart *bms::parseBMS(const std::string &file)
 
     std::ifstream input(file);
     std::string line;
+    std::stringstream s;
 
     while (std::getline(input, line))
     {
@@ -140,23 +116,27 @@ Chart *bms::parseBMS(const std::string &file)
             continue;
         }
 
-        std::smatch result;
+        std::string content = line.substr(1);
+        s.str(content);
+        std::string header;
+        std::string data;
+        std::getline(s >> header >> std::ws, data);
 
-        if (std::regex_match(line, result, randomRegex))
+        if (header == "RANDOM")
         {
-            random = rand() % std::stoi(result[1].str()) + 1;
+            random = rand() % std::stoi(data) + 1;
         }
-        else if (std::regex_match(line, result, ifRegex))
+        else if (header == "IF")
         {
-            skip.push(random != std::stoi(result[1].str()));
+            skip.push(random != std::stoi(data));
         }
-        else if (std::regex_match(line, result, elseRegex))
+        else if (header == "ELSE")
         {
             bool top = skip.top();
             skip.pop();
             skip.push(!top);
         }
-        else if (std::regex_match(line, result, endifRegex))
+        else if (header == "ENDIF")
         {
             skip.pop();
         }
@@ -166,247 +146,242 @@ Chart *bms::parseBMS(const std::string &file)
             continue;
         }
 
-        if (std::regex_match(line, result, genreRegex))
+        if (header == "GENRE")
         {
-            chart->genre = result[1].str();
+            chart->genre = data;
         }
-        else if (std::regex_match(line, result, titleRegex))
+        else if (header == "TITLE")
         {
-            chart->title = result[1].str();
-            if (chart->title.find_first_of('[') < chart->title.find_last_of(']'))
+            chart->title = data;
+            const std::vector<std::pair<char, char>> brackets = {
+                {'[', ']'},
+                {'{', '}'},
+                {'(', ')'},
+                {'<', '>'},
+                {'-', '-'},
+            };
+            for (const std::pair<char, char> &bracket : brackets)
             {
-                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('[') + 1, chart->title.find_last_of(']') - chart->title.find_first_of('[') - 1) + "]";
-                chart->title = chart->title.substr(0, chart->title.find_first_of('['));
-            }
-            else if (chart->title.find_first_of('{') < chart->title.find_last_of('}'))
-            {
-                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('{') + 1, chart->title.find_last_of('}') - chart->title.find_first_of('{') - 1) + "]";
-                chart->title = chart->title.substr(0, chart->title.find_first_of('{'));
-            }
-            else if (chart->title.find_first_of('(') < chart->title.find_last_of(')'))
-            {
-                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('(') + 1, chart->title.find_last_of(')') - chart->title.find_first_of('(') - 1) + "]";
-                chart->title = chart->title.substr(0, chart->title.find_first_of('('));
-            }
-            else if (chart->title.find_first_of('<') < chart->title.find_last_of('>'))
-            {
-                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('<') + 1, chart->title.find_last_of('>') - chart->title.find_first_of('<') - 1) + "]";
-                chart->title = chart->title.substr(0, chart->title.find_first_of('<'));
-            }
-            else if (chart->title.find_first_of('-') < chart->title.find_last_of('-'))
-            {
-                chart->subtitle = "[" + chart->title.substr(chart->title.find_first_of('-') + 1, chart->title.find_last_of('-') - chart->title.find_first_of('-') - 1) + "]";
-                chart->title = chart->title.substr(0, chart->title.find_first_of('-'));
-            }
-        }
-        else if (std::regex_match(line, result, artistRegex))
-        {
-            chart->artist = result[1].str();
-        }
-        else if (std::regex_match(line, result, subtitleRegex))
-        {
-            chart->subtitle = result[1].str();
-        }
-        else if (std::regex_match(line, result, subartistRegex))
-        {
-            chart->subartist = result[1].str();
-        }
-        else if (std::regex_match(line, result, stagefileRegex))
-        {
-            chart->stagefile = parent + result[1].str();
-        }
-        else if (std::regex_match(line, result, bannerRegex))
-        {
-            chart->banner = parent + result[1].str();
-        }
-        else if (std::regex_match(line, result, playLevelRegex))
-        {
-            chart->playLevel = std::stoi(result[1].str());
-        }
-        else if (std::regex_match(line, result, difficultyRegex))
-        {
-            chart->difficulty = std::stoi(result[1].str());
-        }
-        else if (std::regex_match(line, result, totalRegex))
-        {
-            chart->total = std::stof(result[1].str());
-        }
-        else if (std::regex_match(line, result, rankRegex))
-        {
-            chart->rank = std::stoi(result[1].str());
-        }
-        else if (std::regex_match(line, result, wavsRegex))
-        {
-            int key = std::stoi(result[1].str(), nullptr, 36);
-            chart->wavs[key] = parent + result[2].str();
-        }
-        else if (std::regex_match(line, result, bmpsRegex))
-        {
-            int key = std::stoi(result[1].str(), nullptr, 36);
-            chart->bmps[key] = parent + result[2].str();
-        }
-        else if (std::regex_match(line, result, lnobjRegex))
-        {
-            lnobj.push_back(std::stoi(result[1].str(), nullptr, 36));
-        }
-        else if (std::regex_match(line, result, bpmRegex))
-        {
-            chart->sectors[0].bpm = std::stof(result[1].str());
-        }
-        else if (std::regex_match(line, result, bpmsRegex))
-        {
-            int key = std::stoi(result[1].str(), nullptr, 36);
-            bpms[key] = std::stof(result[2].str());
-        }
-        else if (std::regex_match(line, result, stopsRegex))
-        {
-            int key = std::stoi(result[1].str(), nullptr, 36);
-            stops[key] = std::stoi(result[2].str()) / 192.0f;
-        }
-        else if (std::regex_match(line, result, signatureRegex))
-        {
-            int measure = std::stoi(result[1].str());
-            chart->signatures[measure] = std::stof(result[2].str());
-        }
-        else if (std::regex_match(line, result, notesRegex))
-        {
-            int measure = std::stoi(result[1].str());
-            int channel = std::stoi(result[2].str(), nullptr, 36);
-            unsigned long long l = result[3].length() / 2;
-            for (unsigned long long i = 0; i < l; i++)
-            {
-                int key = std::stoi(result[3].str().substr(i * 2, 2), nullptr, 36);
-                if (key)
+                size_t begin = chart->title.find_first_of(bracket.first);
+                size_t end = chart->title.find_last_of(bracket.second);
+                if (begin != std::string::npos && end != std::string::npos && begin < end)
                 {
-                    float fraction = measure + (float)i / l;
-                    switch (channel)
+                    chart->subtitle = "[" + chart->title.substr(begin + 1, end - begin - 1) + "]";
+                    chart->title = chart->title.substr(0, begin);
+                }
+            }
+        }
+        else if (header == "ARTIST")
+        {
+            chart->artist = data;
+        }
+        else if (header == "SUBTITLE")
+        {
+            chart->subtitle = data;
+        }
+        else if (header == "SUBARTIST")
+        {
+            chart->subartist = data;
+        }
+        else if (header == "STAGEFILE")
+        {
+            chart->stagefile = parent + data;
+        }
+        else if (header == "BANNER")
+        {
+            chart->banner = parent + data;
+        }
+        else if (header == "PLAYLEVEL")
+        {
+            chart->playLevel = std::stoi(data);
+        }
+        else if (header == "DIFFICULTY")
+        {
+            chart->difficulty = std::stoi(data);
+        }
+        else if (header == "TOTAL")
+        {
+            chart->total = std::stof(data);
+        }
+        else if (header == "RANK")
+        {
+            chart->rank = std::stoi(data);
+        }
+        else if (header.length() == 5 && header.substr(0, 3) == "WAV")
+        {
+            int key = std::stoi(header.substr(3, 2), nullptr, 36);
+            chart->wavs[key] = parent + data;
+        }
+        else if (header.length() == 5 && header.substr(0, 3) == "BMP")
+        {
+            int key = std::stoi(header.substr(3, 2), nullptr, 36);
+            chart->bmps[key] = parent + data;
+        }
+        else if (header == "LNOBJ")
+        {
+            lnobj.push_back(std::stoi(data, nullptr, 36));
+        }
+        else if (header == "BPM")
+        {
+            chart->sectors[0].bpm = std::stof(data);
+        }
+        else if (header.length() == 5 && header.substr(0, 3) == "BPM")
+        {
+            int key = std::stoi(header.substr(3, 2), nullptr, 36);
+            bpms[key] = std::stof(data);
+        }
+        else if (header.length() == 6 && header.substr(0, 4) == "STOP")
+        {
+            int key = std::stoi(header.substr(4, 2), nullptr, 36);
+            stops[key] = std::stoi(data) / 192.0f;
+        }
+        else if (content[5] == ':')
+        {
+            int measure = std::stoi(content.substr(0, 3));
+            if (content.substr(3, 2) == "02")
+            {
+                chart->signatures[measure] = std::stof(content.substr(6));
+            }
+            else
+            {
+                int channel = std::stoi(content.substr(3, 2), nullptr, 36);
+                std::string objs = content.substr(6);
+                unsigned long long l = objs.length() / 2;
+                for (unsigned long long i = 0; i < l; i++)
+                {
+                    int key = std::stoi(objs.substr(i * 2, 2), nullptr, 36);
+                    if (key)
                     {
-                    case 1: // 01
-                        chart->objs.push_back(create_bgm(fraction, key));
-                        break;
-                    case 3: // 03
-                        speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::BPM,
-                            (float)std::stoi(result[3].str().substr(i * 2, 2), nullptr, 16),
-                        });
-                        break;
-                    case 4: // 04
-                        chart->objs.push_back(create_bmp(fraction, key, 0));
-                        break;
-                    case 6: // 06
-                        chart->objs.push_back(create_bmp(fraction, key, -1));
-                        break;
-                    case 7: // 07
-                        chart->objs.push_back(create_bmp(fraction, key, 1));
-                        break;
-                    case 8: // 08
-                        speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::BPM,
-                            bpms[key],
-                        });
-                        break;
-                    case 9: // 09
-                        speedcore.push_back(speedcore_t{
-                            fraction,
-                            speedcore_t::Type::STP,
-                            stops[key],
-                        });
-                        break;
-                    case 37: // 11
-                    case 38: // 12
-                    case 39: // 13
-                    case 40: // 14
-                    case 41: // 15
-                    case 42: // 16
-                    case 43: // 17
-                    case 44: // 18
-                    case 45: // 19
-                    case 73: // 21
-                    case 74: // 22
-                    case 75: // 23
-                    case 76: // 24
-                    case 77: // 25
-                    case 78: // 26
-                    case 79: // 27
-                    case 80: // 28
-                    case 81: // 29
-                        if (std::find(lnobj.begin(), lnobj.end(), key) == lnobj.end())
+                        float fraction = measure + (float)i / l;
+                        switch (channel)
                         {
-                            chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, false));
-                        }
-                        else
-                        {
-                            chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, true));
+                        case 1: // 01
                             chart->objs.push_back(create_bgm(fraction, key));
+                            break;
+                        case 3: // 03
+                            speedcore.push_back(speedcore_t{
+                                fraction,
+                                speedcore_t::Type::BPM,
+                                (float)std::stoi(content.substr(i * 2, 2), nullptr, 16),
+                            });
+                            break;
+                        case 4: // 04
+                            chart->objs.push_back(create_bmp(fraction, key, 0));
+                            break;
+                        case 6: // 06
+                            chart->objs.push_back(create_bmp(fraction, key, -1));
+                            break;
+                        case 7: // 07
+                            chart->objs.push_back(create_bmp(fraction, key, 1));
+                            break;
+                        case 8: // 08
+                            speedcore.push_back(speedcore_t{
+                                fraction,
+                                speedcore_t::Type::BPM,
+                                bpms[key],
+                            });
+                            break;
+                        case 9: // 09
+                            speedcore.push_back(speedcore_t{
+                                fraction,
+                                speedcore_t::Type::STP,
+                                stops[key],
+                            });
+                            break;
+                        case 37: // 11
+                        case 38: // 12
+                        case 39: // 13
+                        case 40: // 14
+                        case 41: // 15
+                        case 42: // 16
+                        case 43: // 17
+                        case 44: // 18
+                        case 45: // 19
+                        case 73: // 21
+                        case 74: // 22
+                        case 75: // 23
+                        case 76: // 24
+                        case 77: // 25
+                        case 78: // 26
+                        case 79: // 27
+                        case 80: // 28
+                        case 81: // 29
+                            if (std::find(lnobj.begin(), lnobj.end(), key) == lnobj.end())
+                            {
+                                chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, false));
+                            }
+                            else
+                            {
+                                chart->objs.push_back(create_note(fraction, key, channel / 36, channel % 36, true));
+                                chart->objs.push_back(create_bgm(fraction, key));
+                            }
+                            break;
+                        case 109: // 31
+                        case 110: // 32
+                        case 111: // 33
+                        case 112: // 34
+                        case 113: // 35
+                        case 114: // 36
+                        case 115: // 37
+                        case 116: // 38
+                        case 117: // 39
+                        case 145: // 41
+                        case 146: // 42
+                        case 147: // 43
+                        case 148: // 44
+                        case 149: // 45
+                        case 150: // 46
+                        case 151: // 47
+                        case 152: // 48
+                        case 153: // 49
+                            chart->objs.push_back(create_inv(fraction, key, channel / 36 - 2, channel % 36));
+                            break;
+                        case 181: // 51
+                        case 182: // 52
+                        case 183: // 53
+                        case 184: // 54
+                        case 185: // 55
+                        case 186: // 56
+                        case 187: // 57
+                        case 188: // 58
+                        case 189: // 59
+                        case 217: // 61
+                        case 218: // 62
+                        case 219: // 63
+                        case 220: // 64
+                        case 221: // 65
+                        case 222: // 66
+                        case 223: // 67
+                        case 224: // 68
+                        case 225: // 69
+                            if (ln.find(channel) == ln.end())
+                            {
+                                ln[channel] = false;
+                            }
+                            chart->objs.push_back(create_note(fraction, key, channel / 36 - 4, channel % 36, ln[channel]));
+                            ln[channel] = !ln[channel];
+                            break;
+                        case 469: // D1
+                        case 470: // D2
+                        case 471: // D3
+                        case 472: // D4
+                        case 473: // D5
+                        case 474: // D6
+                        case 475: // D7
+                        case 476: // D8
+                        case 477: // D9
+                        case 505: // E1
+                        case 506: // E2
+                        case 507: // E3
+                        case 508: // E4
+                        case 509: // E5
+                        case 510: // E6
+                        case 511: // E7
+                        case 512: // E8
+                        case 513: // E9
+                            chart->objs.push_back(create_bomb(fraction, key, channel / 36 - 12, channel % 36));
+                            break;
                         }
-                        break;
-                    case 109: // 31
-                    case 110: // 32
-                    case 111: // 33
-                    case 112: // 34
-                    case 113: // 35
-                    case 114: // 36
-                    case 115: // 37
-                    case 116: // 38
-                    case 117: // 39
-                    case 145: // 41
-                    case 146: // 42
-                    case 147: // 43
-                    case 148: // 44
-                    case 149: // 45
-                    case 150: // 46
-                    case 151: // 47
-                    case 152: // 48
-                    case 153: // 49
-                        chart->objs.push_back(create_inv(fraction, key, channel / 36 - 2, channel % 36));
-                        break;
-                    case 181: // 51
-                    case 182: // 52
-                    case 183: // 53
-                    case 184: // 54
-                    case 185: // 55
-                    case 186: // 56
-                    case 187: // 57
-                    case 188: // 58
-                    case 189: // 59
-                    case 217: // 61
-                    case 218: // 62
-                    case 219: // 63
-                    case 220: // 64
-                    case 221: // 65
-                    case 222: // 66
-                    case 223: // 67
-                    case 224: // 68
-                    case 225: // 69
-                        if (ln.find(channel) == ln.end())
-                        {
-                            ln[channel] = false;
-                        }
-                        chart->objs.push_back(create_note(fraction, key, channel / 36 - 4, channel % 36, ln[channel]));
-                        ln[channel] = !ln[channel];
-                        break;
-                    case 469: // D1
-                    case 470: // D2
-                    case 471: // D3
-                    case 472: // D4
-                    case 473: // D5
-                    case 474: // D6
-                    case 475: // D7
-                    case 476: // D8
-                    case 477: // D9
-                    case 505: // E1
-                    case 506: // E2
-                    case 507: // E3
-                    case 508: // E4
-                    case 509: // E5
-                    case 510: // E6
-                    case 511: // E7
-                    case 512: // E8
-                    case 513: // E9
-                        chart->objs.push_back(create_bomb(fraction, key, channel / 36 - 12, channel % 36));
-                        break;
                     }
                 }
             }
