@@ -82,7 +82,7 @@ Chart *bms::parseBMS(const std::string &file)
 
     chart->filename = file;
 
-    std::string parent = file.substr(0, file.find_last_of('/') + 1);
+    std::string parent = file.substr(0, file.find_last_of("/\\") + 1);
 
     std::vector<int> lnobj;
     std::map<int, bool> ln;
